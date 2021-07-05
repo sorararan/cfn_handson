@@ -31,25 +31,28 @@ Resources:
       InternetGatewayId:
         !Ref InternetGateway
 
-  # RouteTable:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId:
-  #       !Ref VPC
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        !Ref VPC
+      Tags:
+        - Key: Name
+          Value: "パブリックルートテーブル"
 
-  # DefaultRoute:
-  #   Type: AWS::EC2::Route
-  #   Properties:
-  #     RouteTableId:
-  #       !Ref RouteTable
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId:
-  #       !Ref InternetGateway
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        !Ref RouteTable
+      GatewayId:
+        !Ref InternetGateway
 
-  # SubnetRouteTableAssociation:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId:
-  #       !Ref PublicSubnet
-  #     RouteTableId:
-  #       !Ref RouteTable
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        !Ref PublicSubnet
+      RouteTableId:
+        !Ref RouteTable
