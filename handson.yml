@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description:
-  "Sample CloudFormation template for creating VPC"
+  "Sample CloudFormation template"
 
 Resources:
   VPC:
@@ -10,6 +10,15 @@ Resources:
       Tags:
         - Key: Name
           Value: "VPC領域"
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: "パブリックサブネット"
 
   # InternetGateway:
   #   Type: AWS::EC2::InternetGateway
@@ -21,14 +30,6 @@ Resources:
   #       !Ref VPC
   #     InternetGatewayId:
   #       !Ref InternetGateway
-
-  # PublicSubnet:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     AvailabilityZone: ap-northeast-1a
-  #     VpcId:
-  #       !Ref VPC
-  #     CidrBlock: 10.0.1.0/24
 
   # RouteTable:
   #   Type: AWS::EC2::RouteTable
