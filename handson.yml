@@ -56,3 +56,19 @@ Resources:
         !Ref PublicSubnet
       RouteTableId:
         !Ref RouteTable
+
+  WebSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "WEB-SG"
+      GroupDescription: "for ssh access"
+      VpcId: !Ref VPC
+
+  SSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref WebSG
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 22
+      ToPort: 22
