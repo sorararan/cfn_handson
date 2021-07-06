@@ -72,3 +72,11 @@ Resources:
       CidrIp: 0.0.0.0/0
       FromPort: 22
       ToPort: 22
+
+  WebNIC:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      PrivateIpAddress: 10.0.1.10
+      GroupSet:
+        - !Ref WebSG
+      SubnetId: !Ref PublicSubnet
