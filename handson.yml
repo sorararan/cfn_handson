@@ -56,3 +56,42 @@ Resources:
         !Ref PublicSubnet
       RouteTableId:
         !Ref RouteTable
+
+  Web:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-06631ebafb3ae5d34"
+      InstanceType: "t2.micro"
+      KeyName: "my-key"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          PrivateIpAddress: 10.0.1.10
+          DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet
+          GroupSet:
+            - !Ref WebSG
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 8
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: "Webサーバー"
+
+  WebSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "WEB-SG"
+      GroupDescription: "for ssh access"
+      VpcId: !Ref VPC
+
+  SSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref WebSG
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 22
+      ToPort: 22
