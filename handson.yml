@@ -3,6 +3,7 @@ Description:
   "Sample CloudFormation template"
 
 Resources:
+  # VPC領域
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -11,16 +12,6 @@ Resources:
       Tags:
         - Key: Name
           Value: "VPC領域"
-
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: "ap-northeast-1d"
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      Tags:
-        - Key: Name
-          Value: "パブリックサブネット"
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -33,7 +24,27 @@ Resources:
       InternetGatewayId:
         !Ref InternetGateway
 
-  RouteTable:
+  # パブリックサブネット
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1d"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: "パブリックサブネット"
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      AllocationId: !GetAtt NatEIP.AllocationId
+
+  NatEIP:
+    Type: AWS::EC2::EIP
+
+  PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId:
@@ -42,22 +53,22 @@ Resources:
         - Key: Name
           Value: "パブリックルートテーブル"
 
-  DefaultRoute:
+  PublicRouteTableDefaultRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId:
-        !Ref RouteTable
+        !Ref PublicRouteTable
       GatewayId:
         !Ref InternetGateway
 
-  SubnetRouteTableAssociation:
+  PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId:
         !Ref PublicSubnet
       RouteTableId:
-        !Ref RouteTable
+        !Ref PublicRouteTable
 
   Web:
     Type: AWS::EC2::Instance
@@ -126,6 +137,7 @@ Resources:
       FromPort: 80
       ToPort: 80
 
+  # プライベートサブネット
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
@@ -136,8 +148,45 @@ Resources:
         - Key: Name
           Value: "プライベートサブネット"
 
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        !Ref VPC
+      Tags:
+        - Key: Name
+          Value: "プライベートルートテーブル"
+
+  PrivateRouteTableDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        !Ref PrivateRouteTable
+      NatGatewayId:
+        !Ref NatGateway
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        !Ref PrivateSubnet
+      RouteTableId:
+        !Ref PrivateRouteTable
+
   DB:
     Type: AWS::EC2::Instance
+    # Metadata:
+    #   AWS::CloudFormation::Init:
+    #     config:
+    #       packages:
+    #         yum:
+    #           mysql: []
+    #       services:
+    #         sysvinit:
+    #           mysql:
+    #             enabled: true
+    #             ensureRunning: true
     Properties:
       ImageId: "ami-06631ebafb3ae5d34"
       InstanceType: "t2.micro"
@@ -158,6 +207,15 @@ Resources:
       Tags:
         - Key: Name
           Value: "DBサーバー"
+      # UserData:
+      #   Fn::Base64:
+      #     !Sub |
+      #       #!/bin/bash
+      #       /opt/aws/bin/cfn-init \
+      #       --stack ${AWS::StackName} \
+      #       --resource Web \
+      #       --region ${AWS::Region}
+
   DBSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
