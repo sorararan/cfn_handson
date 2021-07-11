@@ -176,15 +176,18 @@ Resources:
 
   DB:
     Type: AWS::EC2::Instance
+    # DependsOn: NatGateway
     # Metadata:
     #   AWS::CloudFormation::Init:
     #     config:
     #       packages:
     #         yum:
     #           mysql: []
+    #           mysql-server: []
+    #           mysql-libs: []
     #       services:
     #         sysvinit:
-    #           mysql:
+    #           mysqld:
     #             enabled: true
     #             ensureRunning: true
     Properties:
