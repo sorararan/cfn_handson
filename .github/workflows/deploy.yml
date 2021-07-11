@@ -1,11 +1,12 @@
 name: Cloudformation Hands-on
 on:
-  push:
+  pull_request:
+    types: [closed]
     brances:
       - release
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +22,7 @@ jobs:
 
     - name: Deploy Cloudformation Stack
       env:
-        STACK_NAME: create
+        STACK_NAME: deploy
         TEMPLATE_NAME: handson.yml
       run: |
         aws cloudformation deploy \
