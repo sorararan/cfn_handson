@@ -1,11 +1,12 @@
 name: Cloudformation Hands-on
 on:
-  push:
+  pull_request:
+    types: [closed]
     brances:
       - release
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
