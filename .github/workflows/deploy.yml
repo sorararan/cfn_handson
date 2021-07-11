@@ -21,7 +21,7 @@ jobs:
 
     - name: Deploy Cloudformation Stack
       env:
-        STACK_NAME: create
+        STACK_NAME: deploy
         TEMPLATE_NAME: handson.yml
       run: |
         aws cloudformation deploy \

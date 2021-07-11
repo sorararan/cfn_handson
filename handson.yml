@@ -15,6 +15,7 @@ Resources:
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: "ap-northeast-1d"
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
       Tags:
@@ -104,10 +105,10 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: "WEB-SG"
-      GroupDescription: "for ssh access"
+      GroupDescription: "ssh http"
       VpcId: !Ref VPC
 
-  SSH:
+  WebSSH:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref WebSG
@@ -116,7 +117,7 @@ Resources:
       FromPort: 22
       ToPort: 22
 
-  HTTP:
+  WebHTTP:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref WebSG
@@ -124,3 +125,60 @@ Resources:
       CidrIp: 0.0.0.0/0
       FromPort: 80
       ToPort: 80
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1d"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      Tags:
+        - Key: Name
+          Value: "プライベートサブネット"
+
+  DB:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-06631ebafb3ae5d34"
+      InstanceType: "t2.micro"
+      KeyName: "my-key"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          PrivateIpAddress: 10.0.2.10
+          DeviceIndex: 0
+          SubnetId: !Ref PrivateSubnet
+          GroupSet:
+            - !Ref DBSG
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: 8
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: "DBサーバー"
+  DBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "DB-SG"
+      GroupDescription: "ssh mysql"
+      VpcId: !Ref VPC
+
+  DBSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DBSG
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 22
+      ToPort: 22
+
+  DBMySQL:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DBSG
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: 3306
+      ToPort: 3306
