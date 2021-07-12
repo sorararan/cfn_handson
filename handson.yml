@@ -78,6 +78,9 @@ Resources:
           packages:
             yum:
               httpd: []
+              php: []
+              php-mysql: []
+              php-mbstring: []
           services:
             sysvinit:
               httpd:
@@ -111,6 +114,13 @@ Resources:
             --stack ${AWS::StackName} \
             --resource Web \
             --region ${AWS::Region}
+            wget https://ja.wordpress.org/wordpress-3.9.3-ja.tar.gz
+            tar xzvf wordpress-3.9.3-ja.tar.gz
+            cd wordpress
+            sudo su
+            cp -r * /var/www/html/
+            chown apache:apache /var/www/html -R
+            systemctl restart httpd
 
   WebSG:
     Type: AWS::EC2::SecurityGroup
@@ -176,20 +186,7 @@ Resources:
 
   DB:
     Type: AWS::EC2::Instance
-    # DependsOn: NatGateway
-    # Metadata:
-    #   AWS::CloudFormation::Init:
-    #     config:
-    #       packages:
-    #         yum:
-    #           mysql: []
-    #           mysql-server: []
-    #           mysql-libs: []
-    #       services:
-    #         sysvinit:
-    #           mysqld:
-    #             enabled: true
-    #             ensureRunning: true
+    DependsOn: NatGateway
     Properties:
       ImageId: "ami-06631ebafb3ae5d34"
       InstanceType: "t2.micro"
@@ -210,14 +207,15 @@ Resources:
       Tags:
         - Key: Name
           Value: "DBサーバー"
-      # UserData:
-      #   Fn::Base64:
-      #     !Sub |
-      #       #!/bin/bash
-      #       /opt/aws/bin/cfn-init \
-      #       --stack ${AWS::StackName} \
-      #       --resource Web \
-      #       --region ${AWS::Region}
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            sudo su
+            yum localinstall -y https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+            yum install -y mysql-community-server
+            systemctl enable mysqld
+            systemctl start mysqld
 
   DBSG:
     Type: AWS::EC2::SecurityGroup
