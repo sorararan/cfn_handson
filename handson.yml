@@ -35,15 +35,6 @@ Resources:
         - Key: Name
           Value: "パブリックサブネット"
 
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      AllocationId: !GetAtt NatEIP.AllocationId
-
-  NatEIP:
-    Type: AWS::EC2::EIP
-
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -78,9 +69,6 @@ Resources:
           packages:
             yum:
               httpd: []
-              php: []
-              php-mysql: []
-              php-mbstring: []
           services:
             sysvinit:
               httpd:
@@ -114,13 +102,6 @@ Resources:
             --stack ${AWS::StackName} \
             --resource Web \
             --region ${AWS::Region}
-            wget https://ja.wordpress.org/wordpress-3.9.3-ja.tar.gz
-            tar xzvf wordpress-3.9.3-ja.tar.gz
-            cd wordpress
-            sudo su
-            cp -r * /var/www/html/
-            chown apache:apache /var/www/html -R
-            systemctl restart httpd
 
   WebSG:
     Type: AWS::EC2::SecurityGroup
@@ -146,98 +127,3 @@ Resources:
       CidrIp: 0.0.0.0/0
       FromPort: 80
       ToPort: 80
-
-  # プライベートサブネット
-  PrivateSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: "ap-northeast-1d"
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      Tags:
-        - Key: Name
-          Value: "プライベートサブネット"
-
-  PrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        !Ref VPC
-      Tags:
-        - Key: Name
-          Value: "プライベートルートテーブル"
-
-  PrivateRouteTableDefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        !Ref PrivateRouteTable
-      NatGatewayId:
-        !Ref NatGateway
-
-  PrivateSubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId:
-        !Ref PrivateSubnet
-      RouteTableId:
-        !Ref PrivateRouteTable
-
-  DB:
-    Type: AWS::EC2::Instance
-    DependsOn: NatGateway
-    Properties:
-      ImageId: "ami-06631ebafb3ae5d34"
-      InstanceType: "t2.micro"
-      KeyName: "my-key"
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: false
-          PrivateIpAddress: 10.0.2.10
-          DeviceIndex: 0
-          SubnetId: !Ref PrivateSubnet
-          GroupSet:
-            - !Ref DBSG
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp2
-            VolumeSize: 8
-            DeleteOnTermination: true
-      Tags:
-        - Key: Name
-          Value: "DBサーバー"
-      UserData:
-        Fn::Base64:
-          !Sub |
-            #!/bin/bash
-            sudo su
-            yum localinstall -y https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
-            yum install -y mysql-community-server
-            systemctl enable mysqld
-            systemctl start mysqld
-
-  DBSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: "DB-SG"
-      GroupDescription: "ssh mysql"
-      VpcId: !Ref VPC
-
-  DBSSH:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref DBSG
-      IpProtocol: tcp
-      CidrIp: 0.0.0.0/0
-      FromPort: 22
-      ToPort: 22
-
-  DBMySQL:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref DBSG
-      IpProtocol: tcp
-      CidrIp: 0.0.0.0/0
-      FromPort: 3306
-      ToPort: 3306
