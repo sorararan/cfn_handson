@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  # ハンズオン環境構築
+  ProvisionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: codebuild.amazonaws.com
+
+  ReadS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: read-s3-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Resource:
+              - !Join
+                - ""
+                - - !GetAtt ProvisionBucket.Arn
+                  - /provision.zip
+              - !Join
+                - ""
+                - - !GetAtt ProvisionBucket.Arn
+                  - /provision.zip/*
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+          - Effect: Allow
+            Resource:
+              - !GetAtt ProvisionBucket.Arn
+            Action:
+              - s3:ListBucket
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+      Roles:
+        - !Ref ProvisionRole
+
+  ProvisionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: provision-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Resource:
+              - "*"
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+          - Effect: Allow
+            Resource:
+              - "*"
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+          - Effect: Allow
+            Resource:
+              - !GetAtt Provision.Arn
+            Action:
+              - codebuild:CreateReportGroup
+              - codebuild:CreateReport
+              - codebuild:UpdateReport
+              - codebuild:BatchPutTestCases
+              - codebuild:BatchPutCodeCoverages
+      Roles:
+        - !Ref ProvisionRole
+
+  Provision:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: no_artifacts
+      Name: provision
+      Source:
+        Type: S3
+        Location: !Join
+          - ""
+          - - !Ref ProvisionBucket
+            - /provision.zip
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+      ServiceRole: !GetAtt ProvisionRole.Arn
+
+  ProvisionBucket:
+    Type: AWS::S3::Bucket
+
+  # s3ファイル変更検知、環境構築トリガー実行
+  PutObjectToProvisionBucketEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: events.amazonaws.com
+
+  ExecProvisionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: exec-provision-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Resource: !GetAtt Provision.Arn
+            Action:
+              - codebuild:StartBuild
+      Roles:
+        - !Ref PutObjectToProvisionBucketEventRole
+
+  PutObjectToProvisionBucketEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: put-object-to-provision-bucket
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - AWS API Call via CloudTrail
+        detail:
+          eventSource:
+            - s3.amazonaws.com
+          eventName:
+            - CopyObject
+            - CompleteMultiPartUpload
+            - PutObject
+          requestParameters:
+            bucketName:
+              - !Ref ProvisionBucket
+            key:
+              - provision.zip
+      State: ENABLED
+      Targets:
+        - RoleArn: !GetAtt PutObjectToProvisionBucketEventRole.Arn
+          Arn: !GetAtt Provision.Arn
+          Id: exec-provision
+
+  WriteLogToProvisionBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ProvisionBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Resource: !GetAtt ProvisionBucket.Arn
+            Action: s3:GetBucketAcl
+            Principal:
+              Service: cloudtrail.amazonaws.com
+          - Effect: Allow
+            Resource: !Join
+              - ""
+              - - !GetAtt ProvisionBucket.Arn
+                - /AWSLogs/913647930742/*
+            Action: s3:PutObject
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+
+  TrailPuttingObjectToProvisionBucket:
+    Type: AWS::CloudTrail::Trail
+    DependsOn:
+      - WriteLogToProvisionBucketPolicy
+    Properties:
+      TrailName: put-object-to-provision-bucket
+      S3BucketName: !Ref ProvisionBucket
+      IsLogging: true
+      EventSelectors:
+        - DataResources:
+            - Type: AWS::S3::Object
+              Values:
+                - "arn:aws:s3:::"
+          IncludeManagementEvents: false
+          ReadWriteType: All
