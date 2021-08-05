@@ -3,10 +3,19 @@ version: 0.2
 phases:
   install:
     commands:
+      - echo "---------- install aws cli ----------"
       - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
       - unzip awscliv2.zip
       - ./aws/install --bin-dir /root/.pyenv/shims --install-dir /usr/local/aws-cli --update
       - source ./.env
+      - echo "---------- install serverspec ----------"
+      - yum -y install ruby
+      - gem install serverspec
   build:
     commands:
-      - aws cloudformation deploy --stack-name deploy --template-file handson.yml
+      - aws cloudformation deploy --stack-name handson --template-file handson.yml
+  post_build:
+    commands:
+      - bash sh/create_specs.sh
+      - cd serverspec
+      - rake spec

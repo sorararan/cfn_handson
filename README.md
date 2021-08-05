@@ -17,7 +17,7 @@ aws cloudformation deploy --stack-name provision --template-file provision.yml -
 #### 3. `provision.zip` の作成
 CodeBuildで使うファイルをまとめる
 ```
-zip -r provision.zip .env handson.yml buildspec.yml
+zip -r provision.zip .env buildspec.yml .ssh serverspec sh handson.yml
 ```
 
 #### 4. `provision.zip` のアップロード
