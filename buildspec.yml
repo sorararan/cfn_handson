@@ -9,10 +9,11 @@ phases:
       - ./aws/install --bin-dir /root/.pyenv/shims --install-dir /usr/local/aws-cli --update
       - source ./.env
       - echo "---------- install aws cli end ----------"
-      - echo "---------- install serverspec start ----------"
+      - echo "---------- install spec tools start ----------"
       - yum -y install ruby
+      - gem install awspec
       - gem install serverspec
-      - echo "---------- install serverspec end ----------"
+      - echo "---------- install spec tools end ----------"
   build:
     commands:
       - echo "---------- aws cloudformation deploy start ----------"
@@ -20,10 +21,12 @@ phases:
       - echo "---------- aws cloudformation deploy end ----------"
   post_build:
     commands:
+      - echo "---------- awspec test start ----------"
+      - (cd awspec && rake spec)
+      - echo "---------- awspec test end ----------"
       - echo "---------- create_specs.sh start ----------"
       - bash sh/create_specs.sh
       - echo "---------- create_specs.sh end ----------"
       - echo "---------- serverspec test start ----------"
-      - cd serverspec
-      - rake spec
+      - (cd serverspec && rake spec)
       - echo "---------- serverspec test end ----------"

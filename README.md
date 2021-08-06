@@ -4,7 +4,7 @@
 `provision.yml` テンプレートから環境構築用のCodeBuildプロジェクトを作成する
 
 #### 2. `provision.zip` の作成、S3にアップロード
-CodeBuildプロジェクト上で構築する `handson.yml` テンプレートとそのテストを行う `ServerSpec` などをまとめてS3にアップロードすると、CodeBuildプロジェクトがトリガー実行される
+CodeBuildプロジェクト上で構築する `handson.yml` テンプレートとそのテストを行う `ServerSpec` や `awspec` などをまとめてS3にアップロードすると、CodeBuildプロジェクトがトリガー実行される
 
 実行後には `handson.yml` テンプレートの内容が構築される
 
@@ -28,7 +28,7 @@ aws cloudformation deploy --stack-name provision --template-file provision.yml -
 #### 3. `provision.zip` の作成
 CodeBuildで使うファイルをまとめる
 ```
-zip -r provision.zip .env buildspec.yml .ssh serverspec sh handson.yml
+zip -r provision.zip .ssh awspec serverspec sh .env buildspec.yml handson.yml
 ```
 
 #### 4. `provision.zip` のアップロード
