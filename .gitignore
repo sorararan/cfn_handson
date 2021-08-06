@@ -1,0 +1,4 @@
+.env
+*.zip
+sh/hosts
+.ssh/my-key.pem

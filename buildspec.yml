@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "---------- install aws cli start ----------"
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - ./aws/install --bin-dir /root/.pyenv/shims --install-dir /usr/local/aws-cli --update
+      - source ./.env
+      - echo "---------- install aws cli end ----------"
+      - echo "---------- install spec tools start ----------"
+      - yum -y install ruby
+      - gem install awspec
+      - gem install serverspec
+      - echo "---------- install spec tools end ----------"
+  build:
+    commands:
+      - echo "---------- aws cloudformation deploy start ----------"
+      - aws cloudformation deploy --stack-name handson --template-file handson.yml
+      - echo "---------- aws cloudformation deploy end ----------"
+  post_build:
+    commands:
+      - echo "---------- wait service start start ----------"
+      - sleep 30
+      - echo "---------- wait service start end ----------"
+      - echo "---------- awspec test start ----------"
+      - (cd awspec && rake spec)
+      - echo "---------- awspec test end ----------"
+      - echo "---------- create_specs.sh start ----------"
+      - bash sh/create_specs.sh
+      - echo "---------- create_specs.sh end ----------"
+      - echo "---------- serverspec test start ----------"
+      - (cd serverspec && rake spec)
+      - echo "---------- serverspec test end ----------"

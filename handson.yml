@@ -1,6 +1,6 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: 2010-09-09
 Description:
-  "Sample CloudFormation template"
+  Sample CloudFormation template
 
 Resources:
   # VPC領域
@@ -11,7 +11,7 @@ Resources:
       CidrBlock: 10.0.0.0/16
       Tags:
         - Key: Name
-          Value: "VPC領域"
+          Value: VPC領域
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -19,56 +19,49 @@ Resources:
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId:
-        !Ref VPC
-      InternetGatewayId:
-        !Ref InternetGateway
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
 
   # パブリックサブネット
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: "ap-northeast-1d"
+      AvailabilityZone: ap-northeast-1d
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
       Tags:
         - Key: Name
-          Value: "パブリックサブネット"
+          Value: パブリックサブネット
 
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      AllocationId: !GetAtt NatEIP.AllocationId
+  # NatGateway:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     SubnetId: !Ref PublicSubnet
+  #     AllocationId: !GetAtt NatEIP.AllocationId
 
-  NatEIP:
-    Type: AWS::EC2::EIP
+  # NatEIP:
+  #   Type: AWS::EC2::EIP
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId:
-        !Ref VPC
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: "パブリックルートテーブル"
+          Value: パブリックルートテーブル
 
   PublicRouteTableDefaultRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        !Ref PublicRouteTable
-      GatewayId:
-        !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+      GatewayId: !Ref InternetGateway
 
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId:
-        !Ref PublicSubnet
-      RouteTableId:
-        !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
 
   Web:
     Type: AWS::EC2::Instance
@@ -87,9 +80,9 @@ Resources:
                 enabled: true
                 ensureRunning: true
     Properties:
-      ImageId: "ami-06631ebafb3ae5d34"
-      InstanceType: "t2.micro"
-      KeyName: "my-key"
+      ImageId: ami-06631ebafb3ae5d34
+      InstanceType: t2.micro
+      KeyName: my-key
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           PrivateIpAddress: 10.0.1.10
@@ -105,7 +98,7 @@ Resources:
             DeleteOnTermination: true
       Tags:
         - Key: Name
-          Value: "Webサーバー"
+          Value: Webサーバー
       UserData:
         Fn::Base64:
           !Sub |
@@ -125,8 +118,8 @@ Resources:
   WebSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "WEB-SG"
-      GroupDescription: "ssh http"
+      GroupName: WEB-SG
+      GroupDescription: ssh http
       VpcId: !Ref VPC
 
   WebSSH:
@@ -148,96 +141,91 @@ Resources:
       ToPort: 80
 
   # プライベートサブネット
-  PrivateSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      AvailabilityZone: "ap-northeast-1d"
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      Tags:
-        - Key: Name
-          Value: "プライベートサブネット"
+  # PrivateSubnet:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     AvailabilityZone: ap-northeast-1d
+  #     VpcId: !Ref VPC
+  #     CidrBlock: 10.0.2.0/24
+  #     Tags:
+  #       - Key: Name
+  #         Value: プライベートサブネット
 
-  PrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        !Ref VPC
-      Tags:
-        - Key: Name
-          Value: "プライベートルートテーブル"
+  # PrivateRouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     Tags:
+  #       - Key: Name
+  #         Value: プライベートルートテーブル
 
-  PrivateRouteTableDefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        !Ref PrivateRouteTable
-      NatGatewayId:
-        !Ref NatGateway
+  # PrivateRouteTableDefaultRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     RouteTableId: !Ref PrivateRouteTable
+  #     NatGatewayId: !Ref NatGateway
 
-  PrivateSubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId:
-        !Ref PrivateSubnet
-      RouteTableId:
-        !Ref PrivateRouteTable
+  # PrivateSubnetRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PrivateSubnet
+  #     RouteTableId: !Ref PrivateRouteTable
 
-  DB:
-    Type: AWS::EC2::Instance
-    DependsOn: NatGateway
-    Properties:
-      ImageId: "ami-06631ebafb3ae5d34"
-      InstanceType: "t2.micro"
-      KeyName: "my-key"
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: false
-          PrivateIpAddress: 10.0.2.10
-          DeviceIndex: 0
-          SubnetId: !Ref PrivateSubnet
-          GroupSet:
-            - !Ref DBSG
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp2
-            VolumeSize: 8
-            DeleteOnTermination: true
-      Tags:
-        - Key: Name
-          Value: "DBサーバー"
-      UserData:
-        Fn::Base64:
-          !Sub |
-            #!/bin/bash
-            sudo su
-            yum localinstall -y https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
-            yum install -y mysql-community-server
-            systemctl enable mysqld
-            systemctl start mysqld
+  # DB:
+  #   Type: AWS::EC2::Instance
+  #   DependsOn: NatGateway
+  #   Properties:
+  #     ImageId: ami-06631ebafb3ae5d34
+  #     InstanceType: t2.micro
+  #     KeyName: my-key
+  #     NetworkInterfaces:
+  #       - AssociatePublicIpAddress: false
+  #         PrivateIpAddress: 10.0.2.10
+  #         DeviceIndex: 0
+  #         SubnetId: !Ref PrivateSubnet
+  #         GroupSet:
+  #           - !Ref DBSG
+  #     BlockDeviceMappings:
+  #       - DeviceName: /dev/xvda
+  #         Ebs:
+  #           VolumeType: gp2
+  #           VolumeSize: 8
+  #           DeleteOnTermination: true
+  #     Tags:
+  #       - Key: Name
+  #         Value: DBサーバー
+  #     UserData:
+  #       Fn::Base64:
+  #         !Sub |
+  #           #!/bin/bash
+  #           sudo su
+  #           yum localinstall -y https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+  #           yum install -y mysql-community-server
+  #           systemctl enable mysqld
+  #           systemctl start mysqld
 
-  DBSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: "DB-SG"
-      GroupDescription: "ssh mysql"
-      VpcId: !Ref VPC
+  # DBSG:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupName: DB-SG
+  #     GroupDescription: ssh mysql
+  #     VpcId: !Ref VPC
 
-  DBSSH:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref DBSG
-      IpProtocol: tcp
-      CidrIp: 0.0.0.0/0
-      FromPort: 22
-      ToPort: 22
+  # DBSSH:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     GroupId: !Ref DBSG
+  #     IpProtocol: tcp
+  #     CidrIp: 0.0.0.0/0
+  #     FromPort: 22
+  #     ToPort: 22
 
-  DBMySQL:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref DBSG
-      IpProtocol: tcp
-      CidrIp: 0.0.0.0/0
-      FromPort: 3306
-      ToPort: 3306
+  # DBMySQL:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     GroupId: !Ref DBSG
+  #     IpProtocol: tcp
+  #     CidrIp: 0.0.0.0/0
+  #     FromPort: 3306
+  #     ToPort: 3306
