@@ -21,6 +21,9 @@ phases:
       - echo "---------- aws cloudformation deploy end ----------"
   post_build:
     commands:
+      - echo "---------- wait service start start ----------"
+      - sleep 30
+      - echo "---------- wait service start end ----------"
       - echo "---------- awspec test start ----------"
       - (cd awspec && rake spec)
       - echo "---------- awspec test end ----------"
